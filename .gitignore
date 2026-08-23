@@ -16,3 +16,10 @@ out/
 Thumbs.db
 .vscode/
 .idea/
+
+
+
+uploads/
+
+# Local test cookies
+cookies.txt

@@ -18,12 +18,21 @@ const authCookieOptions = {
 };
 
 function sendAuthError(response: Response, error: unknown): void {
+
+  console.error("AUTH ERROR:", error);
+
   if (error instanceof AuthServiceError) {
-    response.status(error.statusCode).json({ success: false, message: error.message });
+    response.status(error.statusCode).json({
+      success: false,
+      message: error.message
+    });
     return;
   }
 
-  response.status(500).json({ success: false, message: "Internal server error" });
+  response.status(500).json({
+    success: false,
+    message: "Internal server error"
+  });
 }
 
 export async function register(request: Request, response: Response): Promise<void> {
@@ -43,6 +52,10 @@ export async function register(request: Request, response: Response): Promise<vo
 }
 
 export async function login(request: Request, response: Response): Promise<void> {
+
+  console.log("LOGIN REQUEST RECEIVED");
+
+
   const result = loginSchema.safeParse(request.body);
 
   if (!result.success) {
