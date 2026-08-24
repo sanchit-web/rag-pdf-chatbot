@@ -1,34 +1,65 @@
 import prisma from "../config/prisma.js";
+import { extractPdfText } from "./pdf.service.js";
+import { chunkText } from "./chunk.service.js";
 
 
-export const createDocument = async(
-    userId:string,
-    file:Express.Multer.File
-)=>{
+export const createDocument = async (
+  userId: string,
+  file: Express.Multer.File,
+) => {
+  const document = await prisma.document.create({
+    data: {
+      userId,
+      name: file.originalname,
+      originalName: file.originalname,
+      fileUrl: file.path,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      status: "PROCESSING",
+    },
+  });
 
-    return prisma.document.create({
+  try {
+    const extraction = await extractPdfText(file.path);
 
-    data:{
-        userId,
+    const chunks = extraction.pages.flatMap((page) => {
+      return chunkText(page.text).map((chunk) => ({
+        documentId: document.id,
+        content: chunk.content,
+        pageNumber: page.pageNumber,
+        chunkIndex: chunk.chunkIndex,
+        tokenCount: chunk.tokenCount,
+      }));
+    });
 
-        name:file.originalname,
+    await prisma.chunk.createMany({
+      data: chunks,
+    });
 
-        originalName:file.originalname,
+    const updatedDocument = await prisma.document.update({
+      where: {
+        id: document.id,
+      },
+      data: {
+        status: "PROCESSED",
+        pageCount: extraction.pageCount,
+      },
+    });
 
-        fileUrl:file.path,
+    return updatedDocument;
+  } catch (error) {
+    await prisma.document.update({
+      where: {
+        id: document.id,
+      },
+      data: {
+        status: "FAILED",
+      },
+    });
 
-        fileSize:file.size,
-
-        mimeType:file.mimetype,
-
-        status:"UPLOADED"
-    }
-
-});
-
+    throw error;
+  }
 };
-
-
 
 export const getUserDocuments = async(
     userId:string
