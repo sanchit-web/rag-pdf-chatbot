@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import  prisma  from "../config/prisma.js";
+import prisma from "../config/prisma.js";
 import { askQuestion } from "../services/rag.service.js";
 
 export const chat = async (
@@ -7,7 +7,11 @@ export const chat = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { question, documentId } = req.body;
+    const {
+      question,
+      documentId,
+      conversationId,
+    } = req.body;
 
     // Validate request body
     if (!question || !documentId) {
@@ -43,14 +47,61 @@ export const chat = async (
       return;
     }
 
+    // Find existing conversation or create a new one
+    let conversation;
+
+    if (conversationId) {
+      conversation = await prisma.conversation.findFirst({
+        where: {
+          id: conversationId,
+          userId: req.userId,
+        },
+      });
+
+      if (!conversation) {
+        res.status(404).json({
+          success: false,
+          message: "Conversation not found",
+        });
+        return;
+      }
+    } else {
+      conversation = await prisma.conversation.create({
+        data: {
+          userId: req.userId,
+          title: question.slice(0, 100),
+        },
+      });
+    }
+
+    // Save user's message
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        role: "user",
+        content: question,
+      },
+    });
+
     // Run the RAG pipeline
     const result = await askQuestion(
       question,
       documentId
     );
 
+    // Save assistant's answer
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        role: "assistant",
+        content: result.answer,
+      },
+    });
+
+    // Return answer + conversation ID + sources
     res.status(200).json({
       success: true,
+      conversationId: conversation.id,
       ...result,
     });
   } catch (error) {
