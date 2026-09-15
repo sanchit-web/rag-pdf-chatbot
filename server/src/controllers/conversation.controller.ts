@@ -6,8 +6,8 @@ export const getConversations = async (
   res: Response
 ): Promise<void> => {
 
-    console.log("GET CONVERSATION ROUTE HIT:", req.params.conversationId);
     
+
   try {
     if (!req.userId) {
       res.status(401).json({
@@ -121,6 +121,64 @@ if (typeof conversationId !== "string") {
     res.status(500).json({
       success: false,
       message: "Failed to fetch conversation",
+    });
+  }
+};
+
+export const deleteConversation = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const conversationId = req.params.conversationId;
+
+    if (typeof conversationId !== "string" || !conversationId) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid conversation ID",
+      });
+      return;
+    }
+
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        userId: req.userId,
+      },
+    });
+
+    if (!conversation) {
+      res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+      return;
+    }
+
+    await prisma.conversation.delete({
+      where: {
+        id: conversationId,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Conversation deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete conversation error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete conversation",
     });
   }
 };
