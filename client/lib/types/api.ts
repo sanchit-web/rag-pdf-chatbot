@@ -66,3 +66,31 @@ export interface ConversationResponse {
   success: boolean;
   conversation: Conversation;
 }
+
+export interface DocumentResponse {
+  success: boolean;
+  document: Document;
+}
+
+export interface DeleteDocumentResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ChatSource {
+  pageNumber: number;
+  chunkIndex: number;
+}
+
+export interface ChatResponse {
+  success: boolean;
+  answer: string;
+  sources: ChatSource[];
+  conversationId: string;
+}
+
+export interface ChatInput {
+  question: string;
+  documentId: string;
+  conversationId?: string;
+}
