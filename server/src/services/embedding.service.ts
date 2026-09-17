@@ -1,32 +1,33 @@
-const OLLAMA_URL = "http://localhost:11434";
+import { GoogleGenAI } from "@google/genai";
 
-const EMBEDDING_MODEL = "nomic-embed-text";
+const ai = new GoogleGenAI({
+  apiKey: process.env["GEMINI_API_KEY"],
+});
+
+const EMBEDDING_MODEL = "gemini-embedding-001";
 
 export const generateEmbedding = async (
   text: string,
 ): Promise<number[]> => {
-  const response = await fetch(`${OLLAMA_URL}/api/embed`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await ai.models.embedContent({
+    model: EMBEDDING_MODEL,
+    contents: text,
+    config: {
+      outputDimensionality: 768,
     },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: text,
-    }),
   });
 
-  if (!response.ok) {
+  const embedding = response.embeddings?.[0]?.values;
+
+  if (!embedding) {
+    throw new Error("Gemini returned no embedding");
+  }
+
+  if (embedding.length !== 768) {
     throw new Error(
-      `Ollama embedding request failed: ${response.status} ${response.statusText}`,
+      `Expected 768 dimensions, received ${embedding.length}`,
     );
   }
 
-  const data = await response.json();
-
-  if (!data.embeddings?.[0]) {
-    throw new Error("Ollama returned no embedding");
-  }
-
-  return data.embeddings[0];
+  return embedding;
 };

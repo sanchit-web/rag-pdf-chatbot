@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { generateEmbedding } from "./services/embedding.service.js";
 
 const text = "This is a test sentence for my RAG chatbot.";
