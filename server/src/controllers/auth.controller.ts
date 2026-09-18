@@ -1,3 +1,4 @@
+import "dotenv/config";
 import type { Request, Response } from "express";
 
 import {
@@ -12,7 +13,7 @@ import { loginSchema, registerSchema } from "../validators/auth.validator.js";
 const authCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "none" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
@@ -74,11 +75,11 @@ export async function login(request: Request, response: Response): Promise<void>
 
 export function logout(_request: Request, response: Response): void {
   response.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "none",
+  path: "/",
+});
   response.json({ success: true, message: "Logged out" });
 }
 

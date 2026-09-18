@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 
 import authRoutes from "./routes/auth.routes.js";
-import documentRoutes from "./routes/document.routes.js";
+
 
 const app = express();
 
@@ -23,10 +23,6 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 
-app.use(
-"/api/documents",
-documentRoutes
-);
 
 app.get("/api/health", (_request, response) => {
   response.json({
