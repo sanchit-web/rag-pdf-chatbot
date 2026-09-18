@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -78,7 +78,7 @@ function NavIcon({ children }: { children: ReactNode }) {
   );
 }
 
-export default function ChatPage() {
+ function ChatPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -260,6 +260,8 @@ export default function ChatPage() {
       </main>
     );
   }
+
+  
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -663,5 +665,28 @@ export default function ChatPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50">
+          <div className="flex min-h-screen">
+            <section className="flex-1">
+              <div className="h-16 border-b border-slate-200 bg-white" />
+
+              <div className="mx-auto max-w-5xl space-y-6 p-5 sm:p-6 lg:p-8">
+                <div className="h-16 animate-pulse rounded-2xl bg-white" />
+                <div className="h-[500px] animate-pulse rounded-2xl bg-white" />
+              </div>
+            </section>
+          </div>
+        </main>
+      }
+    >
+      <ChatPageContent />
+    </Suspense>
   );
 }
