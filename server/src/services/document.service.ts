@@ -1,7 +1,7 @@
 import prisma from "../config/prisma.js";
 import { extractPdfText } from "./pdf.service.js";
 import { chunkText } from "./chunk.service.js";
-
+import { generateEmbedding } from "./embedding.service.js";
 
 export const createDocument = async (
   userId: string,
@@ -24,7 +24,6 @@ export const createDocument = async (
 
     const chunks = extraction.pages.flatMap((page) => {
       return chunkText(page.text).map((chunk) => ({
-        documentId: document.id,
         content: chunk.content,
         pageNumber: page.pageNumber,
         chunkIndex: chunk.chunkIndex,
@@ -32,9 +31,33 @@ export const createDocument = async (
       }));
     });
 
-    await prisma.chunk.createMany({
-      data: chunks,
-    });
+    for (const chunk of chunks) {
+      const createdChunk = await prisma.chunk.create({
+        data: {
+          documentId: document.id,
+          content: chunk.content,
+          pageNumber: chunk.pageNumber,
+          chunkIndex: chunk.chunkIndex,
+          tokenCount: chunk.tokenCount,
+        },
+      });
+
+      const embedding = await generateEmbedding(chunk.content);
+
+      if (embedding.length !== 768) {
+        throw new Error(
+          `Expected 768 dimensions, received ${embedding.length}`,
+        );
+      }
+
+      const vector = `[${embedding.join(",")}]`;
+
+      await prisma.$executeRaw`
+        UPDATE "Chunk"
+        SET "embedding" = ${vector}::vector
+        WHERE "id" = ${createdChunk.id}::uuid
+      `;
+    }
 
     const updatedDocument = await prisma.document.update({
       where: {
@@ -60,6 +83,9 @@ export const createDocument = async (
     throw error;
   }
 };
+
+
+
 
 export const getUserDocuments = async(
     userId:string
